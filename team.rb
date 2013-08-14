@@ -6,9 +6,9 @@ module Jekyll
       @dir  = dir
       @name = "index.html"
 
+      self.process(@name)
       self.read_yaml(File.join(base, '_layouts'), 'team.html')
       self.data['team'] = self.get_team(site)
-      self.process(@name)
     end
 
     def get_team(site)
@@ -33,10 +33,11 @@ module Jekyll
       @base     = base
       @dir      = dir
       @name     = "index.html"
-      self.data = YAML.load(File.read(File.join(@base, path)))
-      self.data['title'] = "#{self.data['name']} | #{self.data['role']}"
 
       self.process(@name)
+      self.read_yaml(File.join(base, '_layouts'), 'profile.html')
+      self.data = self.data.merge(YAML.load(File.read(File.join(@base, path))))
+      self.data['title'] = "#{self.data['name']} | #{self.data['role']}"
     end
   end
 
@@ -64,23 +65,12 @@ module Jekyll
 
     def write_team_index(site)
       team = TeamIndex.new(site, site.source, "/team")
-      team.render(site.layouts, site.site_payload)
-      team.write(site.dest)
-
       site.pages << team
-      site.static_files << team
     end
 
     def write_person_index(site, path, name)
       person = PersonIndex.new(site, site.source, "/team/#{name}", path)
-
-      if person.data['active']
-        person.render(site.layouts, site.site_payload)
-        person.write(site.dest)
-
-        site.pages << person
-        site.static_files << person
-      end
+      site.pages << person
     end
   end
 
