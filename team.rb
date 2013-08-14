@@ -37,7 +37,7 @@ module Jekyll
       self.process(@name)
       self.read_yaml(File.join(base, '_layouts'), 'profile.html')
       self.data = self.data.merge(YAML.load(File.read(File.join(@base, path))))
-      self.data['title'] = "#{self.data['name']} | #{self.data['role']}"
+      self.data['title'] = self.data['name']
     end
   end
 
