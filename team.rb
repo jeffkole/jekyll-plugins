@@ -96,16 +96,24 @@ module Jekyll
       site = context.environments.first["site"]
       page = context.environments.first["page"]
 
-      if page
-        authors = page['author']
-        authors = [authors] if authors.is_a?(String)
+      authors = context.scopes.last['author']
+      authors = page['author'] if page && page['author']
+      authors = [authors] if authors.is_a?(String)
 
+      if authors
         "".tap do |output|
           authors.each do |author|
-            data     = YAML.load(File.read(File.join(site['source'], '_team', "#{author.downcase.gsub(' ', '-')}.yml")))
-            template = File.read(File.join(site['source'], '_includes', 'author.html'))
+            slug = "#{author.downcase.gsub(/[ .]/, '-')}"
+            file = File.join(site['source'], '_team', "#{slug}.yml")
+            if File.exists?(file)
+              data              = YAML.load(File.read(file))
+              data['permalink'] = "/team/#{slug}"
+              template          = File.read(File.join(site['source'], '_includes', 'author.html'))
 
-            output << Liquid::Template.parse(template).render('author' => data)
+              output << Liquid::Template.parse(template).render('author' => data)
+            else
+              output << author
+            end
           end
         end
       end
