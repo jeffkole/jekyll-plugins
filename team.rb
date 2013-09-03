@@ -88,42 +88,41 @@ module Jekyll
     end
   end
 
-  class AuthorsTag < Liquid::Tag
-
-    def initialize(tag_name, text, tokens)
-      super
-      @text   = text
-      @tokens = tokens
+  module AuthorsFilter
+    def to_author_links(authors)
+      connector = "and"
+      return templatize(authors) if authors.is_a?(String)
+      case authors.length
+      when 0
+        ""
+      when 1
+        templatize(authors[0])
+      when 2
+        "#{templatize(authors[0])} #{connector} #{templatize(authors[1])}"
+      else
+        "#{authors[0...-1].map{|a| templatize(a)}.join(', ')}, #{connector} #{templatize(authors[-1])}"
+      end
     end
 
-    def render(context)
-      site = context.environments.first["site"]
-      page = context.environments.first["page"]
-      config = TeamConfiguration.team_configuration(context.registers[:site].config)
+    private
+    def templatize(author)
+      site = @context.environments.first["site"]
+      config = TeamConfiguration.team_configuration(@context.registers[:site].config)
 
-      authors = context.scopes.last['author']
-      authors = page['author'] if page && page['author']
-      authors = [authors] if authors.is_a?(String)
+      template = File.read(File.join(site['source'], '_includes', 'author.html'))
+      slug = "#{author.downcase.gsub(/[ .]/, '-')}"
+      file = File.join(site['source'], '_team', "#{slug}.yml")
+      if File.exists?(file)
+        data              = YAML.load(File.read(file))
+        data['permalink'] = "/#{config['team_dest']}/#{slug}"
 
-      if authors
-        "".tap do |output|
-          authors.each do |author|
-            slug = "#{author.downcase.gsub(/[ .]/, '-')}"
-            file = File.join(site['source'], '_team', "#{slug}.yml")
-            if File.exists?(file)
-              data              = YAML.load(File.read(file))
-              data['permalink'] = "/#{config['team_dest']}/#{slug}"
-              template          = File.read(File.join(site['source'], '_includes', 'author.html'))
-
-              output << Liquid::Template.parse(template).render('author' => data)
-            else
-              output << author
-            end
-          end
-        end
+        Liquid::Template.parse(template).render('author' => data)
+      else
+        author
       end
     end
   end
+
 end
 
-Liquid::Template.register_tag('authors', Jekyll::AuthorsTag)
+Liquid::Template.register_filter(Jekyll::AuthorsFilter)
